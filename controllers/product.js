@@ -8,47 +8,40 @@ exports.getAddProducts = (req,res,next) => {
 }
 
 exports.postAddProduct = (req,res,next) => {
-    const product = new Product(req.body.name, addZeroes(req.body.price))
+    const product = new Product(
+        null,
+        req.body.title,
+        addZeroes(req.body.price),
+        req.body.description,
+        req.body.imageUrl
+    )
     product.save()
     res.redirect('/')
 }
 
 exports.getProducts = (req,res,next) => {
-    //-----ASYNC WAY
-    //create our own callback process
-    // Product.fetchAll((fetchedProducts) => {
-    //     console.log('fetched: ',fetchedProducts)
-    //     res.render('shop', {
-    //         pageTitle: 'Shop Page',
-    //         products: fetchedProducts
-    //     })
-    // })
 
     //-----SYNC WAY
-    const fetchedProducts = Product.fetchAllSync()
-    res.render('shop', {
-        pageTitle: 'Shop Page',
-        products: fetchedProducts
-    })
-    //to test for insomnia
-    // res.json(fetchedProducts)
+    Product.fetchAll().then(([rows, fieldData]) => {
+        res.render('shop', {
+            pageTitle: 'Shop Page',
+            products: rows
+        })
+    }).catch(err => console.log(err))
+    
+  
 }
 
 exports.getOneProductById = (req,res,next) => {
-    const fetchProduct = Product.fetchOneProductById(+req.params.id)
-    if(fetchProduct.msg){
-        res.render('404', {
-            pageTitle: 'PAGE NOT FOUND',
-            message: fetchProduct.msg
-        })
-    }else{
+    Product.fetchById(+req.params.id).then(([row, fieldData]) => {
         res.render('product', {
-            pageTitle: fetchProduct.name,
-            product: fetchProduct
+            pageTitle: row[0].title,
+            product: row[0]
         })
-        //to test for insomnia
-        // res.json(fetchProduct)
-    }
+
+    }).catch(err => console.log(err))
+    
+    
 }
 
 exports.deleteProduct = (req,res,next) => {

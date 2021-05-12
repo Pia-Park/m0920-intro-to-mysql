@@ -1,65 +1,39 @@
-const fs = require('fs')
-const path = require('path')
-
-const rootDirectory = require('../util/path')
-
-const dataPath = path.join(rootDirectory, 'data', 'Products.json')
+const db = require('../util/database')
 
 module.exports = class Product{
-  constructor(name, price){
-    this.id = Math.random()
-    this.name = name
+  constructor(id, title, price, description, imageUrl){
+    this.id = id
+    this.title = title
     this.price = price
+    this.description = description
+    this.imageUrl = imageUrl
   }
 
   save(){
-    fs.readFile(dataPath, (err, data) => {
-      let tempProducts = []
-      if(!err){
-        tempProducts = JSON.parse(data)
-      }
-
-      tempProducts.push(this)
-      fs.writeFile(dataPath, JSON.stringify(tempProducts, null, 2), err => {
-        if(err) throw err
-      })
-    })
+    //excute pass 2 arg 
+    return db.execute(`
+      INSERT INTO products (title, price, description, imageUrl)
+      VALUES (?, ?, ?, ?)`, 
+      [this.title, this.price, this.description, this.imageUrl])
   }
 
   static fetchAll(callback) {
-    //this is asynchronous
-    fs.readFile(dataPath, (err, data) => {
-      if(err){
-        callback([])
-      } else{
-        callback(JSON.parse(data))
-      }
-    } )
+    return db.execute('SELECT * FROM products')
+    
   }
 
   //alternative way of fetching all
   static fetchAllSync() {
-    return JSON.parse(fs.readFileSync(dataPath))
   }
 
-  static fetchOneProductById(id){
-    const products = JSON.parse(fs.readFileSync(dataPath))
-    const found = products.some(prod => prod.id === id)
-
-    if(found){
-      return products.find(prod => prod.id === id)
-    }else{
-      return { msg: `Product with id of ${id} is not found`}
-    }
+  static fetchById(id){
+    return db.execute('SELECT * FROM products WHERE products.id = ?', [id])
+    
   }
 
   static deleteById(id){
-    const products = JSON.parse(fs.readFileSync(dataPath))
-    const newProducts = products.filter(prod => prod.id !== id)
+    return db.execute('DELETE FROM products WHERE products.id = ?', [id])
     
-    fs.writeFile(dataPath, JSON.stringify(newProducts, null, 2), (err) => {
-      if(err) throw err
-    })
   }
 
 }
